@@ -1,11 +1,11 @@
 #!/bin/sh
 
-set -e
+set -e 
 
-SUBDOMAIN="dev"
+SUBDOMAIN="prod"
 PASSWORD="pass1234"
 ADMIN_PASSWORD="pass1234"
-EMAIL="dev@contoso.com"
+EMAIL="dev@example.com"
 
 echo "--- Creating databases"
 bundle exec rake cartodb:db:setup
@@ -35,8 +35,14 @@ bundle exec  rake cartodb:db:set_user_account_type["${SUBDOMAIN}",'[DEDICATED]']
 bundle exec  rake cartodb:db:configure_geocoder_extension_for_non_org_users[$SUBDOMAIN]
 
 # Set import limits
-bundle exec rake cartodb:set_custom_limits_for_user["${SUBDOMAIN}",10240000000,100000000,1]
-
+# Import limits here mirrored from https://github.com/mapcomm/mapping.community-carto_install_doc#a-create-users-and-organisations
+bundle exec rake cartodb:db:set_user_quota["${SUBDOMAIN}",10240]
+bundle exec rake cartodb:db:set_unlimited_table_quota["${SUBDOMAIN}"]
+bundle exec rake cartodb:db:set_user_private_tables_enabled["${SUBDOMAIN}",'true']
+bundle exec rake cartodb:db:set_user_account_type["${SUBDOMAIN}",'[DEDICATED]']
+bundle exec rake cartodb:set_custom_limits_for_user["${SUBDOMAIN}",import_fil‌e_size,table_row_cou‌nt,concurrent_import‌s]
+bundle exec rake user:change:max_layers["${SUBDOMAIN}",25]
 
 # Enable sync tables
-echo "UPDATE users SET sync_tables_enabled=true WHERE username='${SUBDOMAIN}'" | psql -U postgres -t carto_db_development
+echo "UPDATE users SET sync_tables_enabled=true WHERE username='${SUBDOMAIN}'" | psql -U postgres -t carto_db_production
+
